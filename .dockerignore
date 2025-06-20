@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+frontend/node_modules
+frontend/dist
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Go
+backend/bin # Assuming local builds might go here
+backend/vendor # If you vendor dependencies
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor specific
+.vscode
+*.swp
+*~
