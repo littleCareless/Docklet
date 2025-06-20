@@ -10,6 +10,7 @@ RUN npm run build
 FROM golang:1.24-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/go.mod backend/go.sum ./
+ENV GOPROXY=https://goproxy.cn,direct
 RUN go mod download
 COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/main .
