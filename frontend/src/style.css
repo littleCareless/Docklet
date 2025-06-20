@@ -22,12 +22,17 @@ a:hover {
   color: #535bf2;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100vh; /* Fallback for browsers that don't support 100% on body well without html height */
+  height: 100%; /* Ensure body takes full height */
+  display: flex; /* Use flex to make #app fill the body */
+  flex-direction: column; /* Stack children vertically */
 }
 
 h1 {
@@ -59,10 +64,12 @@ button:focus-visible {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  /* margin: 0 auto; remove auto margin to allow full width/height */
+  text-align: center; /* Keep text centered if needed for direct children */
+  width: 100%;
+  height: 100%; /* Make #app take full height of body */
+  display: flex; /* Allow App.vue's root to fill #app */
+  flex-direction: column; /* Stack children vertically */
 }
 
 @media (prefers-color-scheme: light) {

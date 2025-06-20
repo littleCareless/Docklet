@@ -27,13 +27,20 @@ docker build -t docklet-app .
 **重要**: 为了让应用程序能够访问宿主机的 Docker 服务并列出容器信息，您需要将宿主机的 Docker socket 文件挂载到容器内部。
 
 ```bash
-docker run -p 8888:8888 -v /var/run/docker.sock:/var/run/docker.sock docklet-app
+docker run -d -p 8888:8888 -v /var/run/docker.sock:/var/run/docker.sock docklet-app
 ```
 
 参数说明:
+*   `-d`: 使容器在后台（分离模式）运行。
 *   `-p 8888:8888`: 将主机的 8888 端口映射到容器的 8888 端口。如果需要，您可以更改主机端口 (例如 `-p <your_port>:8888`)。
 *   `-v /var/run/docker.sock:/var/run/docker.sock`: 将宿主机的 Docker socket 挂载到容器中，允许应用与 Docker 守护进程通信。
 *   `docklet-app`: 您在构建步骤中为镜像指定的名称。
+
+**查看后台日志:**
+使用 `docker ps` 找到容器 ID 或名称，然后使用 `docker logs <container_id_or_name>`。
+
+**停止后台容器:**
+使用 `docker stop <container_id_or_name>`。
 
 ### 3. 访问应用
 
