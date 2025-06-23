@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings" // <<< ADD THIS LINE
+	"strings"
 
 	"docklet/api"
-	scanner "docklet/docker_scanner" // Renamed import for clarity
+	dockerscanner "docklet/docker_scanner" // Renamed import for clarity
+	systemscanner "docklet/system_scanner" // Added for system services
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -20,14 +21,21 @@ const (
 
 func main() {
 	// Create a new Docker client
-	dockerCli, err := scanner.NewScanner()
+	dockerCli, err := dockerscanner.NewScanner()
 	if err != nil {
 		log.Fatalf("Failed to initialize Docker scanner: %v", err)
 	}
-	// defer dockerCli.Close() // Gin might run longer, consider where to close this. For a simple app, defer in main is okay.
+	// defer dockerCli.Close() // Consider closing when app exits
+
+	// Create a new System scanner
+	sysScanner, err := systemscanner.NewSystemScanner()
+	if err != nil {
+		log.Fatalf("Failed to initialize System scanner: %v", err)
+	}
+	// defer sysScanner.Close() // Consider closing when app exits
 
 	// Get port from environment or use default
-	port := scanner.GetEnvOrDefault("DOCKLET_PORT", DefaultPort)
+	port := dockerscanner.GetEnvOrDefault("DOCKLET_PORT", DefaultPort)
 	listenAddr := ":" + port
 
 	// Initialize Gin router
@@ -36,7 +44,8 @@ func main() {
 	// API routes
 	apiRoutes := router.Group("/api")
 	{
-		apiRoutes.GET("/services", api.ServicesHandlerGin(dockerCli))
+		apiRoutes.GET("/services", api.ServicesHandlerGin(dockerCli)) // Docker services
+		apiRoutes.GET("/system-services", api.SystemServicesHandlerGin(sysScanner)) // Native system services
 		apiRoutes.GET("/health", api.HealthCheckHandlerGin())
 	}
 
@@ -78,8 +87,9 @@ func main() {
 	}
 
 	log.Printf("Docklet Gin server starting on %s", listenAddr)
-	log.Printf("API endpoint: http://%s%s/api/services", scanner.GetEnvOrDefault("DOCKLET_HOST_IP", scanner.DefaultHost), listenAddr)
-	log.Printf("Health check: http://%s%s/health", scanner.GetEnvOrDefault("DOCKLET_HOST_IP", scanner.DefaultHost), listenAddr)
+	log.Printf("Docker Services API: http://%s%s/api/services", dockerscanner.GetEnvOrDefault("DOCKLET_HOST_IP", dockerscanner.DefaultHost), listenAddr)
+	log.Printf("System Services API: http://%s%s/api/system-services", dockerscanner.GetEnvOrDefault("DOCKLET_HOST_IP", dockerscanner.DefaultHost), listenAddr)
+	log.Printf("Health check: http://%s%s/api/health", dockerscanner.GetEnvOrDefault("DOCKLET_HOST_IP", dockerscanner.DefaultHost), listenAddr)
 
 	if err := router.Run(listenAddr); err != nil {
 		log.Fatalf("Failed to start Gin server: %v", err)

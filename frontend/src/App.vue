@@ -18,60 +18,101 @@
       {{ error }}
     </div>
     <div
-      v-if="!loading && !error && services.length === 0"
+      v-if="!loading && !error && services.length === 0 && systemWebServices.length === 0"
       id="no-services-message"
     >
-      未找到可用的服务。
+      未找到可用的 Docker 服务或系统 Web 服务。
     </div>
-    <div
-      v-if="!loading && !error && services.length > 0"
-      id="services-grid"
-      class="services-grid"
-    >
-      <div
-        v-for="service in sortedServices"
-        :key="service.id"
-        class="service-card"
-      >
-        <h2>
-          <span
-            v-if="
-              service.icon &&
-              (service.icon.startsWith('http://') ||
-                service.icon.startsWith('https://') ||
-                service.icon.startsWith('/'))
-            "
-          >
-            <img
-              :src="service.icon"
-              :alt="(service.title || service.name) + ' icon'"
-              class="icon-image"
-            />
-          </span>
-          <span
-            v-else-if="service.icon && service.icon.startsWith('fa-')"
-            class="icon"
-          >
-            <i :class="['fas', service.icon]"></i>
-          </span>
-          <span
-            v-else-if="service.icon"
-            class="icon"
-            >{{ service.icon }}</span
-          >
-          {{ service.title || service.name || "未知服务" }}
-        </h2>
-        <p>{{ service.description || `容器名: ${service.container_name}` }}</p>
-        <a
-          v-if="service.url"
-          :href="service.url"
-          target="_blank"
-          class="service-link"
-          >访问服务</a
-        >
-        <p v.else>无可用访问链接</p>
-      </div>
-      </div>
+
+    <!-- Docker Services Section -->
+    <div v-if="!loading && !error && services.length > 0">
+       <h3>Docker 容器服务</h3>
+       <div
+           id="services-grid"
+           class="services-grid"
+       >
+           <div
+           v-for="service in sortedServices"
+           :key="service.id"
+           class="service-card"
+           >
+           <h2>
+               <span
+               v-if="
+                   service.icon &&
+                   (service.icon.startsWith('http://') ||
+                   service.icon.startsWith('https://') ||
+                   service.icon.startsWith('/'))
+               "
+               >
+               <img
+                   :src="service.icon"
+                   :alt="(service.title || service.name) + ' icon'"
+                   class="icon-image"
+               />
+               </span>
+               <span
+               v-else-if="service.icon && service.icon.startsWith('fa-')"
+               class="icon"
+               >
+               <i :class="['fas', service.icon]"></i>
+               </span>
+               <span
+               v-else-if="service.icon"
+               class="icon"
+               >{{ service.icon }}</span
+               >
+               {{ service.title || service.name || "未知Docker服务" }}
+           </h2>
+           <p>{{ service.description || `容器名: ${service.container_name}` }}</p>
+           <a
+               v-if="service.url"
+               :href="service.url"
+               target="_blank"
+               class="service-link"
+               >访问服务</a
+           >
+           <p v-else>无可用访问链接</p>
+           </div>
+       </div>
+    </div>
+
+     <!-- System Web Services Section -->
+     <div v-if="!loadingSystemServices && !errorSystemServices && systemWebServices.length > 0" style="margin-top: 40px;">
+       <h3>本机 Web 服务</h3>
+       <div
+         id="system-services-grid"
+         class="services-grid"
+       >
+         <div
+           v-for="sysService in systemWebServices"
+           :key="sysService.name"
+           class="service-card"
+         >
+           <h2>
+             <!-- You might want a default icon for system services -->
+             <span class="icon"><i class="fas fa-cogs"></i></span>
+             {{ sysService.display_name || sysService.name }}
+           </h2>
+           <p>状态: {{ sysService.status }}</p>
+           <p v-if="sysService.pid && sysService.pid !== '-'">PID: {{ sysService.pid }}</p>
+           <div v-if="sysService.listening_ports && sysService.listening_ports.length > 0">
+             <p>监听端口:</p>
+             <ul>
+               <li v-for="port in sysService.listening_ports" :key="port">
+                 <a :href="`http://${currentHostname}:${port}`" target="_blank" class="service-link">
+                   访问端口 {{ port }}
+                 </a>
+               </li>
+             </ul>
+           </div>
+           <p v-else>未检测到监听端口</p>
+         </div>
+       </div>
+     </div>
+      <div v-if="loadingSystemServices" style="text-align: center; margin-top: 20px;">正在加载本机 Web 服务...</div>
+      <div v-if="errorSystemServices" style="color: red; text-align: center; margin-top: 20px;">{{ errorSystemServices }}</div>
+
     </main>
     <footer>
       <p>Docklet - 自动发现您的 Docker 服务</p>
@@ -82,10 +123,16 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 
-const services = ref([]);
-const loading = ref(true);
-const error = ref(null);
+const services = ref([]); // For Docker services
+const loading = ref(true); // For Docker services
+const error = ref(null); // For Docker services
+
+const systemWebServices = ref([]);
+const loadingSystemServices = ref(true);
+const errorSystemServices = ref(null);
+
 const apiBaseUrl = ""; // Served from the same domain, or use import.meta.env.VITE_API_BASE_URL if configured
+const currentHostname = computed(() => window.location.hostname);
 
 // Function to rewrite URLs that point to localhost if accessed via IP/domain
 function rewriteServiceUrl(originalUrlString) {
@@ -123,12 +170,10 @@ function rewriteServiceUrl(originalUrlString) {
   }
 }
 
-async function fetchServices() {
+async function fetchDockerServices() {
   loading.value = true;
   error.value = null;
   try {
-    // apiBaseUrl is empty, so fetch will use relative path /api/services
-    // Vite proxy will handle forwarding this to the backend
     const response = await fetch(`${apiBaseUrl}/api/services`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -140,11 +185,29 @@ async function fetchServices() {
       icon: service.icon ? rewriteServiceUrl(service.icon) : service.icon,
     }));
   } catch (e) {
-    console.error("获取服务失败:", e);
-    error.value = `加载服务失败: ${e.message}. 请确保后端服务正在运行并且 Docker Socket 可访问。`;
-    services.value = []; // Clear services on error
+    console.error("获取Docker服务失败:", e);
+    error.value = `加载Docker服务失败: ${e.message}.`;
+    services.value = [];
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchSystemWebServices() {
+  loadingSystemServices.value = true;
+  errorSystemServices.value = null;
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/system-services`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    systemWebServices.value = await response.json() || [];
+  } catch (e) {
+    console.error("获取本机Web服务失败:", e);
+    errorSystemServices.value = `加载本机Web服务失败: ${e.message}.`;
+    systemWebServices.value = [];
+  } finally {
+    loadingSystemServices.value = false;
   }
 }
 
@@ -178,9 +241,11 @@ const sortedServices = computed(() => {
 });
 
 onMounted(() => {
-  fetchServices();
+  fetchDockerServices();
+  fetchSystemWebServices();
   // Optional: Refresh services periodically
-  // setInterval(fetchServices, 30000);
+  // setInterval(fetchDockerServices, 30000);
+  // setInterval(fetchSystemWebServices, 60000); // System services might not change as often
 });
 </script>
 

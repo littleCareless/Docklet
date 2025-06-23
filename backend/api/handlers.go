@@ -4,7 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	scanner "docklet/docker_scanner"
+	dockerscanner "docklet/docker_scanner" // Renamed to avoid conflict
+	systemscanner "docklet/system_scanner"
 
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ import (
 // ServicesHandlerGin handles requests to list Docker services using Gin.
 func ServicesHandlerGin(dockerCli *client.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		services, err := scanner.ListServices(dockerCli)
+		services, err := dockerscanner.ListServices(dockerCli)
 		if err != nil {
 			log.Printf("Error listing services: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list Docker services"})
@@ -22,6 +23,29 @@ func ServicesHandlerGin(dockerCli *client.Client) gin.HandlerFunc {
 		// Allow all origins for simplicity in development
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.JSON(http.StatusOK, services)
+	}
+}
+
+// SystemServicesHandlerGin handles requests to list native system services using Gin.
+func SystemServicesHandlerGin(sysScanner *systemscanner.SystemScanner) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		allServices, err := sysScanner.ListServices()
+		if err != nil {
+			log.Printf("Error listing system services: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list system services"})
+			return
+		}
+
+		// Filter for likely web services
+		webServices := []systemscanner.SystemServiceInfo{}
+		for _, service := range allServices {
+			if service.IsLikelyWebService {
+				webServices = append(webServices, service)
+			}
+		}
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.JSON(http.StatusOK, webServices)
 	}
 }
 
