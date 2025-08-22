@@ -1,0 +1,8 @@
+packages:
+  - 'frontend'
+  - 'backend'
+
+# 如果需要添加更多包，可以使用通配符
+# - 'packages/*'
+# - 'apps/*'
+# - 'libs/*'

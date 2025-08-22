@@ -1,0 +1,24 @@
+{
+  "name": "@docklet/backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Docklet 后端 - Docker 服务信息 API",
+  "scripts": {
+    "dev": "go run main.go",
+    "build": "go build -o bin/docklet main.go",
+    "test": "go test ./...",
+    "lint": "go fmt ./... && go vet ./...",
+    "clean": "rm -rf bin/",
+    "mod-tidy": "go mod tidy",
+    "mod-download": "go mod download"
+  },
+  "engines": {
+    "go": ">=1.21"
+  },
+  "keywords": [
+    "golang",
+    "docker",
+    "api",
+    "gin"
+  ]
+}

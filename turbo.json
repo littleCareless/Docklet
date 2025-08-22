@@ -1,0 +1,64 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        "dist/**",
+        "bin/**",
+        "build/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".eslintrc*",
+        "**/*.go"
+      ]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "**/*_test.go",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
+    "clean": {
+      "cache": false
+    },
+    "mod-tidy": {
+      "cache": false,
+      "inputs": [
+        "go.mod",
+        "go.sum"
+      ]
+    },
+    "mod-download": {
+      "cache": false,
+      "inputs": [
+        "go.mod"
+      ]
+    }
+  },
+  "globalDependencies": [
+    "turbo.json",
+    "pnpm-workspace.yaml",
+    "package.json"
+  ]
+}

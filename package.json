@@ -1,0 +1,43 @@
+{
+  "name": "docklet-monorepo",
+  "version": "1.0.0",
+  "description": "Docklet - Docker 服务信息展示平台 (Monorepo)",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean",
+    "format": "prettier --write .",
+    "docker:build": "docker build -t docklet-app .",
+    "docker:run": "docker run -d -p 8888:8888 -v /var/run/docker.sock:/var/run/docker.sock docklet-app"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "keywords": [
+    "docker",
+    "monitoring",
+    "web-interface",
+    "go",
+    "vue",
+    "monorepo"
+  ],
+  "author": "Docklet Team",
+  "license": "MIT"
+}
